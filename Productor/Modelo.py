@@ -1,4 +1,4 @@
-import json
+import numpy as np
 
 class Modelo:
     def __init__(self):
@@ -8,7 +8,8 @@ class Modelo:
         self.iteraciones = 0
         pass
 
-    def configurar_modelo(self):
+    def configurar_modelo(self) -> None:
+        print("\n\t[MODELO] Configuración del modelo.")
         try:
             self.iteraciones = int(input("Ingrese el número de iteraciones de la simulación: "))
             self.num_variables = int(input("Ingrese el número de variables del modelo: "))
@@ -17,8 +18,8 @@ class Modelo:
             while i <= self.num_variables:
                 print(f"\nVARIABLE {i} DE {self.num_variables}")
                 
-                nom = input("Ingrese el nombre de la variable: ").strip()
-                if nom in self.variables:
+                nombre = input("Ingrese el nombre de la variable: ").strip()
+                if nombre in self.variables:
                     print("El nombre ingresado ya existe. Intente con otro.")
                     continue
                 
@@ -29,8 +30,8 @@ class Modelo:
 
                 if tipo == '1':
                     try:
-                        val = float(input(f"Ingrese el valor de la constante '{nom}': "))
-                        self.variables[nom] = ('const', val)
+                        valor = float(input(f"Ingrese el valor de la constante '{nombre}': "))
+                        self.variables[nombre] = ('const', valor)
                         i += 1
                     except ValueError:
                         print("Valor inválido; ingrese un número.")
@@ -46,43 +47,43 @@ class Modelo:
                         try:
                             pares = [par.strip() for par in datos.split(',') if par.strip()]
                             valores = []
-                            probs = []
+                            propabilidades = []
                             for par in pares:
                                 valor, probabilidad = par.split(':')
-                                v = float(valor)
+                                v = int(valor)
                                 p = float(probabilidad)
                                 valores.append(v)
-                                probs.append(p)
-                            if abs(sum(probs) - 1.0) > 1e-6:
+                                propabilidades.append(p)
+                            if abs(sum(propabilidades) - 1.0) > 1e-6:
                                 print("La suma de probabilidades debe ser 1.0. Intente de nuevo.")
                                 continue
-                            self.variables[nom] = ('disc', valores, probs)
+                            self.variables[nombre] = ('disc', valores, propabilidades)
                             i += 1
                         except Exception:
                             print("Formato inválido; use valor:probabilidad separando pares con comas.")
 
                     else:
-                        dist = input("Distribución [1: Uniforme, 2: Normal]: ").strip()
-                        if dist not in ('1','2'):
+                        distribucion = input("Distribución [1: Uniforme, 2: Normal]: ").strip()
+                        if distribucion not in ('1','2'):
                             print("Opción inválida; ingrese 1 o 2.")
                             continue
 
-                        if dist == '1':
+                        if distribucion == '1':
                             try:
                                 lim_inferior = float(input("Límite inferior: "))
                                 lim_superior = float(input("Límite superior: "))
                                 if lim_inferior >= lim_superior:
                                     print("Límite inferior debe ser menor que el superior.")
                                     continue
-                                self.variables[nom] = ('unif', lim_inferior, lim_superior)
+                                self.variables[nombre] = ('unif', lim_inferior, lim_superior)
                                 i += 1
                             except ValueError:
                                 print("Parámetros inválidos; ingrese números.")
 
                         else:
                             try:
-                                media = float(input("Media (mu): "))
-                                desv_est = float(input("Desviación estándar (sigma): "))
+                                media = float(input("Media: "))
+                                desv_est = float(input("Desviación estándar: "))
                                 if desv_est <= 0:
                                     print("La desviación debe de ser positiva.")
                                     continue
@@ -95,7 +96,7 @@ class Modelo:
                                         continue
                                 else:
                                     lim_inferior, lim_superior = None, None
-                                self.variables[nom] = ('normal', media, desv_est, lim_inferior, lim_superior)
+                                self.variables[nombre] = ('normal', media, desv_est, lim_inferior, lim_superior)
                                 i += 1
                             except ValueError:
                                 print("Parámetros inválidos; ingrese números.")
@@ -106,19 +107,19 @@ class Modelo:
             if not self.formula:
                 raise ValueError("Fórmula vacía.")
 
-            print("\n [MODELO] Configuración completada.")
+            print("\n\t[MODELO] Configuración completada.")
             print(f"Iteraciones: {self.iteraciones}")
             print("Variables:")
-            for var, especificacion in self.variables.items():
-                print(f"\t- {var}: {especificacion}")
+            for variable, especificacion in self.variables.items():
+                print(f"\t- {variable}: {especificacion}")
             print(f"Fórmula: {self.formula}")
 
         except KeyboardInterrupt:
-            print("\n [Modelo - ERROR]: Ejecución interrumpida por el usuario.")
+            print("\n\t[Modelo - ERROR] Ejecución interrumpida por el usuario.")
         except Exception as e:
-            print(f"\n [Modelo - ERROR]: {e}")
+            print(f"\n\t[Modelo - ERROR] {e}")
 
-    def obtener_configuracion(self):
+    def obtener_configuracion(self) -> dict:
         configuracion = {}
         configuracion['formula'] = self.formula
         constantes = []
@@ -131,8 +132,32 @@ class Modelo:
                 constantes.append(const)
         configuracion['constantes'] = constantes
 
-        return json.dumps(configuracion, indent=4)
+        return configuracion
         
-    def generar_escenarios(self):
-
-        pass
+    def generar_escenario(self, rng: np.random.Generator) -> dict:
+        escenario = {}
+        for nombre, valor in self.variables.items():
+            if 'disc' in valor:
+                valores = valor[1]
+                probabilidades = valor[2]
+                v = rng.choice(a=valores, p=probabilidades)
+                v = float(v)
+                escenario[nombre] = v
+            elif 'unif' in valor:
+                lim_inferior = valor[1]
+                lim_superior = valor[2]
+                v = rng.uniform(lim_inferior, lim_superior)
+                v = float(v)
+                escenario[nombre] = v
+            elif 'normal' in valor:
+                media = valor[1]
+                desv_est = valor[2]
+                v = rng.normal(media, desv_est)
+                if valor[3] is not None and valor[4] is not None:
+                    lim_inferior = valor[3]
+                    lim_superior = valor[4]
+                    v = np.clip(v, lim_inferior, lim_superior)
+                    v = float(v)
+                escenario[nombre] = v
+        
+        return escenario
