@@ -1,14 +1,16 @@
 import pika
 import json
 import numpy as np
-from Modelo import Modelo   
+import os
+import multiprocessing as mp
+from Modelo import Modelo
 
 class Productor:
     def __init__(self, ip: str, nom_exchange: str, nom_queue: str):
-        #self.conexion = pika.BlockingConnection(
-        #    pika.ConnectionParameters(host=ip)
-        #)
-        #self.canal = self.conexion.channel()
+        self.conexion = pika.BlockingConnection(
+            pika.ConnectionParameters(host=ip)
+        )
+        self.canal = self.conexion.channel()
         self.nom_exchange = nom_exchange
         self.nom_queue = nom_queue
         self.escenarios = set()
@@ -26,27 +28,44 @@ class Productor:
         self.modelo.configurar_modelo()
 
     def publicar_configuracion(self):
-        print("\n\t[PRODUCTOR] Configuración por enviar: ")
-        configuracion = json.dumps(self.modelo.obtener_configuracion(), indent=4)
-        print(configuracion)
-        #self.canal.basic_publish(
-        #    exchange=self.nom_exchange, 
-        #    routing_key='', 
-        #    body=configuracion,
-        #    properties=pika.BasicProperties(delivery_mode=2)
-        #    )
+        print("\n\t[PRODUCTOR] Enviando configuración.")
+        configuracion = json.dumps(self.modelo.obtener_configuracion())
+        self.canal.basic_publish(
+            exchange=self.nom_exchange, 
+            routing_key='', 
+            body=configuracion,
+            properties=pika.BasicProperties(delivery_mode=2)
+            )
 
     def generar_escenarios(self):
+        iteraciones = self.modelo.iteraciones
+        print(f"\t[PRODUCTOR] Generando {iteraciones} escenarios.")
         
-        pass
+        with mp.Pool() as pool:
+            for escenario in pool.map(self.funcion_pool, range(iteraciones)):
+                escenario_json = json.dumps(escenario, sort_keys=True)
+                if escenario_json not in self.escenarios:
+                    self.escenarios.add(escenario_json)
+
+        print(f"\t[PRODUCTOR] Se han generado {len(self.escenarios)} escenarios únicos.")
 
     def publicar_escenarios(self):
-        pass
+        for escenario in self.escenarios:
+            self.canal.basic_publish(
+                exchange='', 
+                routing_key=self.nom_queue, 
+                body=escenario
+            )
+        
 
     def iniciar_productor(self):
         self.configurar_modelo()
-        #self.configurar_conexion()
+        self.configurar_conexion()
         self.publicar_configuracion()
         self.generar_escenarios()
-        #self.generar_escenarios()
-        #self.publicar_escenario()
+        self.publicar_escenarios()
+
+    def funcion_pool(self, _):
+        rng = np.random.default_rng()
+        escenario = self.modelo.generar_escenario(rng)
+        return escenario

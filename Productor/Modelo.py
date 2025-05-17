@@ -6,7 +6,6 @@ class Modelo:
         self.num_variables = 0
         self.variables = {}
         self.iteraciones = 0
-        pass
 
     def configurar_modelo(self) -> None:
         print("\n\t[MODELO] Configuración del modelo.")
