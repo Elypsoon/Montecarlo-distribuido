@@ -34,16 +34,18 @@ class Consumidor:
         self.canal.start_consuming()
 
         self.formula = self.configuracion['formula']
-        self.constantes = self.configuracion.get('constantes', {})
+        self.constantes = self.configuracion['constantes']
 
         print(f"[CONSUMIDOR] Configuración recibida: {self.configuracion}")
 
     def procesar_escenarios(self):
         while True:
-            method, props, body = self.canal.basic_get(queue=self.nom_queue_escenarios, auto_ack=True)
+            method, props, body = self.canal.basic_get(queue=self.nom_queue_escenarios, auto_ack=False)
             if method is None:
                 print("[CONSUMIDOR] Cola de escenarios vacía.")
                 break
+
+            print("Sí hay escenarios")
 
             escenario = json.loads(body.decode('utf-8'))
             simulacion = {}

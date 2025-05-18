@@ -119,20 +119,15 @@ class Modelo:
             print(f"\n\t[Modelo - ERROR] {e}")
 
     def obtener_configuracion(self) -> dict:
-        configuracion = {}
-        configuracion['formula'] = self.formula
-        constantes = []
-        for nombre, valor in self.variables.items():
-            const = {}
-            if 'const' in valor:
-                nom = nombre
-                val = valor[1]
-                const[nom] = val
-                constantes.append(const)
-        configuracion['constantes'] = constantes
-
-        return configuracion
-        
+            return {
+                'formula': self.formula,
+                'constantes': {
+                    nombre: spec[1]
+                    for nombre, spec in self.variables.items()
+                    if spec[0] == 'const'
+                }
+            }
+            
     def generar_escenario(self, rng: np.random.Generator) -> dict:
         escenario = {}
         for nombre, valor in self.variables.items():
