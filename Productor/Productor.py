@@ -1,7 +1,6 @@
 import pika
 import json
 import numpy as np
-import os
 import multiprocessing as mp
 from Modelo import Modelo
 
