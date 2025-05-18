@@ -160,3 +160,6 @@ class Modelo:
                 escenario[nombre] = v
         
         return escenario
+    
+    def obtener_variables(self):
+        return self.variables

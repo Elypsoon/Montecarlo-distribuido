@@ -2,7 +2,16 @@ import pika
 import json
 import numpy as np
 import multiprocessing as mp
+import itertools
 from Modelo import Modelo
+
+def generar_escenario(modelo_variables):
+    rng = np.random.default_rng()
+    
+    modelo = Modelo()
+    modelo.variables.update(modelo_variables)
+
+    return modelo.generar_escenario(rng)
 
 class Productor:
     def __init__(self, ip: str, nom_exchange: str, nom_queue: str):
@@ -14,10 +23,6 @@ class Productor:
         self.nom_queue = nom_queue
         self.escenarios = set()
         self.modelo = Modelo()
-
-    #queue name y durable true
-    #en publish -> properties=pika.basicproperties(pika.deliverymode.persistent)
-    #channel.basic_qos(prefetch_count=1) EN CONSUMIDOR
 
     def configurar_conexion(self):
         self.canal.exchange_declare(exchange=self.nom_exchange, exchange_type='fanout')
@@ -39,9 +44,12 @@ class Productor:
     def generar_escenarios(self):
         iteraciones = self.modelo.iteraciones
         print(f"\t[PRODUCTOR] Generando {iteraciones} escenarios.")
-        
+
+        modelo_variables = self.modelo.obtener_variables()
+
         with mp.Pool() as pool:
-            for escenario in pool.map(self.funcion_pool, range(iteraciones)):
+            repetidos = itertools.repeat(modelo_variables, iteraciones)
+            for escenario in pool.map(generar_escenario, repetidos):
                 escenario_json = json.dumps(escenario, sort_keys=True)
                 if escenario_json not in self.escenarios:
                     self.escenarios.add(escenario_json)
@@ -55,7 +63,6 @@ class Productor:
                 routing_key=self.nom_queue, 
                 body=escenario
             )
-        
 
     def iniciar_productor(self):
         self.configurar_modelo()
@@ -63,8 +70,3 @@ class Productor:
         self.publicar_configuracion()
         self.generar_escenarios()
         self.publicar_escenarios()
-
-    def funcion_pool(self, _):
-        rng = np.random.default_rng()
-        escenario = self.modelo.generar_escenario(rng)
-        return escenario
