@@ -1,14 +1,15 @@
 '''
-Parte del proyecto encargado de la visualización de los datos.
-Temporalmente con datos de prueba que simulan el comportamiento de los datos.
+Implementación de un visualizador para la simulación Monte Carlo.
+Este visualizador utiliza Dash y Plotly para crear una interfaz gráfica
 '''
 
 import dash
-from dash import dcc, html
+from dash import dcc, html, no_update
 from dash.dependencies import Output, Input
 import plotly.graph_objs as go
-import random
 import numpy as np
+import pika
+import json
 
 # Hoja de estilo externa
 hojas_de_estilo_externas = ['https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap']
@@ -68,6 +69,13 @@ class Visualizador:
                 html.P("Simulación Monte Carlo Distribuida")
             ], className="pie-de-pagina")
         ], className="contenedor-principal")
+        
+         # Conectar a RabbitMQ y declarar cola de resultados
+        self.rabbit_connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host='localhost')
+        )
+        self.rabbit_channel = self.rabbit_connection.channel()
+        self.rabbit_channel.queue_declare(queue='Resultados', durable=True)
 
         # Registra los callbacks de la aplicación
         self.registrar_callbacks()
@@ -133,19 +141,24 @@ class Visualizador:
 '''
 
     def registrar_callbacks(self):
-        # Callback para actualizar el gráfico en vivo cada vez que el intervalo se dispara
         @self.aplicacion.callback(
             Output("grafico-en-vivo", "extendData"),
             Input("componente-intervalo", "n_intervals")
         )
         def actualizar_grafico_en_vivo(n):
-            # Genera un nuevo valor aleatorio (simulación)
-            nuevo_valor = random.gauss(0, 1)
-            self.resultados.append(nuevo_valor)
+            method, header, body = self.rabbit_channel.basic_get(
+                queue='Resultados', auto_ack=True
+            )
+            if not method:
+                return no_update
+
+            mensaje = json.loads(body.decode("utf-8"))
+            resultado = mensaje.get("resultado")
+            self.resultados.append(resultado)
+
             id_escenario = len(self.resultados)
-            # Calcula la media acumulada de los resultados
             media_acumulada = np.mean(self.resultados)
-            # Devuelve los nuevos datos para extender el gráfico
+
             return (
                 {"x": [[id_escenario]], "y": [[media_acumulada]]},
                 [0],
