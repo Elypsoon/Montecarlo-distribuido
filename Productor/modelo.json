@@ -1,0 +1,37 @@
+{
+    "formula": "((pv - c1 - c2) * x) - (ca + cb)",
+    "iteraciones": 10,
+    "num_variables": 6,
+    "constantes":{
+        "pv": 70000,
+        "ca": 160000000,
+        "cb": 80000000
+    },
+    "variables": {
+        "c1": {
+            "tipo": "discreta",
+            "parametros": {
+                "valores": [10000, 13000, 16000, 19000, 22000],
+                "probabilidades": [0.1, 0.3, 0.3, 0.2, 0.1]
+            }
+        },
+        "c2": {
+            "tipo": "continua",
+            "parametros": {
+                "distribucion": "uniforme",
+                "limite_inferior": 25000,
+                "limite_superior": 35000
+            }
+        },
+        "x":{
+            "tipo": "continua",
+            "parametros": {
+                "distribucion": "normal",
+                "media": 14500,
+                "desviacion": 4000,
+                "limite_inferior": 9000,
+                "limite_superior": 28500
+            }
+        }
+    }
+}

@@ -2,27 +2,33 @@ import pika
 import json
 import numpy as np
 import multiprocessing as mp
-import itertools
 from Modelo import Modelo
 
-def generar_escenario(modelo_variables):
-    rng = np.random.default_rng()
-    
-    modelo = Modelo()
-    modelo.variables.update(modelo_variables)
+modelo_global = None
 
-    return modelo.generar_escenario(rng)
+def iniciar_pool(ruta_modelo: str, variables: dict):
+    global modelo_global
+    modelo_global = Modelo(ruta_modelo=ruta_modelo)
+    modelo_global.configurar_modelo()
+    modelo_global.variables = variables
+
+def generar_escenario(_):
+    rng = np.random.default_rng()
+    escenario = modelo_global.generar_escenario(rng=rng)
+    print(f"El escenario generado es: {escenario}")
+    return json.dumps(escenario, sort_keys=True)
 
 class Productor:
-    def __init__(self, ip: str, nom_exchange: str, nom_queue: str):
+    def __init__(self, ip: str, nom_exchange: str, nom_queue: str, ruta_modelo: str):
         self.conexion = pika.BlockingConnection(
             pika.ConnectionParameters(host=ip)
         )
         self.canal = self.conexion.channel()
+        self.ruta_modelo = ruta_modelo
         self.nom_exchange = nom_exchange
         self.nom_queue = nom_queue
         self.escenarios = set()
-        self.modelo = Modelo()
+        self.modelo = Modelo(ruta_modelo=ruta_modelo)
 
     def configurar_conexion(self):
         self.canal.exchange_declare(exchange=self.nom_exchange, exchange_type='fanout')
@@ -33,28 +39,29 @@ class Productor:
 
     def publicar_configuracion(self):
         print("\n\t[PRODUCTOR] Enviando configuración.")
-        configuracion = json.dumps(self.modelo.obtener_configuracion())
+        mensaje = json.dumps(self.modelo.obtener_configuracion())
+        
         self.canal.basic_publish(
             exchange=self.nom_exchange, 
             routing_key='', 
-            body=configuracion,
+            body=mensaje,
             properties=pika.BasicProperties(delivery_mode=2)
             )
 
     def generar_escenarios(self):
         iteraciones = self.modelo.iteraciones
-        print(f"\t[PRODUCTOR] Generando {iteraciones} escenarios.")
+        variables = self.modelo.variables
 
-        modelo_variables = self.modelo.obtener_variables()
+        print(f"[PRODUCTOR] Generando {iteraciones} escenarios en paralelo.")
 
-        with mp.Pool() as pool:
-            repetidos = itertools.repeat(modelo_variables, iteraciones)
-            for escenario in pool.map(generar_escenario, repetidos):
-                escenario_json = json.dumps(escenario, sort_keys=True)
-                if escenario_json not in self.escenarios:
-                    self.escenarios.add(escenario_json)
-
-        print(f"\t[PRODUCTOR] Se han generado {len(self.escenarios)} escenarios únicos.")
+        with mp.Pool(
+            initializer=iniciar_pool,
+            initargs=(self.ruta_modelo, variables)
+        ) as pool:
+            for escenario_json in pool.map(generar_escenario, range(iteraciones)):
+                self.escenarios.add(escenario_json)
+        
+        print(f"[PRODUCTOR] Se han generado {len(self.escenarios)} escenarios únicos.")
 
     def publicar_escenarios(self):
         for escenario in self.escenarios:

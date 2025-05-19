@@ -3,9 +3,10 @@ from Productor import Productor
 IP = 'localhost'
 EXCHANGE = 'Cofiguracion'
 QUEUE = 'Escenarios'
+RUTA_MODELO = 'Productor\modelo.json'
 
 def main():
-    productor = Productor(ip=IP, nom_exchange=EXCHANGE, nom_queue=QUEUE)
+    productor = Productor(ip=IP, nom_exchange=EXCHANGE, nom_queue=QUEUE, ruta_modelo=RUTA_MODELO)
     productor.iniciar_productor()
     
 if __name__ == '__main__':
