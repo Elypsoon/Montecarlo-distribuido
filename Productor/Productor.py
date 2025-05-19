@@ -2,6 +2,7 @@ import pika
 import json
 import numpy as np
 import multiprocessing as mp
+import itertools
 from Modelo import Modelo
 
 modelo_global = None
@@ -38,7 +39,8 @@ class Productor:
         self.modelo.configurar_modelo()
 
     def publicar_configuracion(self):
-        print("\n\t[PRODUCTOR] Enviando configuración.")
+        print("[PRODUCTOR] Enviando configuración.")
+        print(f"[PRODUCTOR] La configuración del modelo es: {self.modelo.obtener_configuracion()}")
         mensaje = json.dumps(self.modelo.obtener_configuracion())
         
         self.canal.basic_publish(
