@@ -75,7 +75,7 @@ class Visualizador:
             pika.ConnectionParameters(host='localhost')
         )
         self.rabbit_channel = self.rabbit_connection.channel()
-        self.rabbit_channel.queue_declare(queue='Resultados', durable=True)
+        self.rabbit_channel.queue_declare(queue='Resultados')
 
         # Registra los callbacks de la aplicación
         self.registrar_callbacks()

@@ -49,8 +49,7 @@ class Consumidor:
         )
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
-        print(f"[CONSUMIDOR] Procesado escenario → resultado={resultado}")
-
+        
     def configurar_conexion(self):
         self.canal.exchange_declare(exchange=self.nom_exchange, exchange_type="fanout")
         self.canal.queue_declare(queue=self.nom_queue_escenarios, durable=True)

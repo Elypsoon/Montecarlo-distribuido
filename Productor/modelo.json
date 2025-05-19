@@ -1,6 +1,6 @@
 {
     "formula": "((pv - c1 - c2) * x) - (ca + cb)",
-    "iteraciones": 10,
+    "iteraciones": 100,
     "num_variables": 6,
     "constantes":{
         "pv": 70000,
