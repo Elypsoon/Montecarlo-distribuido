@@ -1,5 +1,5 @@
 """
-______________________________________________
+__________________________________________________________________________________________________________________________________________
 Módulo: Consumidor.py
 Descripción: El Consumidor es un proceso autónomo que se encarga de ejecutar simulaciones Montecarlo a partir de los escenarios enviados 
 por el productor. Principalmente se encarga de recibir una configuración y luego procesar escenarios usando mensajes intercambiados con 
@@ -7,9 +7,12 @@ RabbitMQ que es un sistema de mensajería basado en colas. El consumidor procesa
 variables recibidas y finalmente se publica el resultado en otra cola.
     1.Configuración inicial con formula matematica. 
     2. escenarios con valores variables. 
+__________________________________________________________________________________________________________________________________________
 """
 import pika
 import json
+
+import pika.connection
 
 class Consumidor:
 
@@ -30,7 +33,7 @@ class Consumidor:
         _constantes (dict): Diccionario con las constantes necesarias para la evaluación.
     """
     def __init__(self, ip: str, nom_exchange: str, nom_queue_escenarios: str, nom_queue_resultados: str):
-        self.conexion = pika.BlockingConnection(pika.ConnectionParameters(host=ip))
+        self.conexion = pika.BlockingConnection(pika.ConnectionParameters(host=ip,credentials=pika.PlainCredentials("guest","guest")))
         self.canal = self.conexion.channel()
         self.nom_exchange = nom_exchange
         self.nom_queue_escenarios = nom_queue_escenarios
