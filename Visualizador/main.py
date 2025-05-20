@@ -1,21 +1,25 @@
 '''
-    ___________________________________________________________________________
-    Módulo: Visualizador.py
-    Descripción: Módulo encargado de la visualización de resultados de una simulación Monte Carlo distribuida.
-    Recibe resultados a través de RabbitMQ y muestra en tiempo real la media acumulada de los escenarios simulados
-    usando una interfaz web interactiva basada en Dash y Plotly.
-    ____________________________________________________________________________
+___________________________________________________________________________
+Módulo: main.py
+Descripción: Punto de entrada de la aplicación Visualizador.
+Este script permite configurar de forma variable los parámetros de conexión, el nombre de la cola
+y el modo debug, de forma similar al enfoque usado en el Consumidor.
+____________________________________________________________________________
 '''
 from Visualizador import Visualizador
 
+# Parámetros configurables para el Visualizador
+IP: str = 'localhost'
+COLA: str = 'Resultados'
+DEBUG: bool = False         
+
 def main() -> None:
     """
-    Punto de entrada de la aplicación.
-    Esta función inicializa la instancia de Visualizador y arranca el proceso de visualización llamando a su método 'iniciar' con la depuración desactivada.
+    Función principal que inicializa el visualizador con los parámetros configurados
+    y arranca el servidor web para la visualización de la simulación.
     """
-    
-    visualizador = Visualizador()
-    visualizador.iniciar(debug=False)
+    visualizador = Visualizador(host=IP, cola=COLA)
+    visualizador.iniciar(debug=DEBUG)
 
 if __name__ == "__main__":
     main()

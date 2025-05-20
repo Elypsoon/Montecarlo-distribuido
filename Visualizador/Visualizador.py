@@ -1,9 +1,10 @@
 '''
 ___________________________________________________________________________
 Módulo: Visualizador.py
-Descripción: Módulo encargado de la visualización de resultados de una simulación Monte Carlo distribuida.
-Recibe resultados a través de RabbitMQ y muestra en tiempo real la media acumulada de los escenarios simulados
-usando una interfaz web interactiva basada en Dash y Plotly.
+Descripción: Módulo encargado de la visualización de resultados de una simulación
+Monte Carlo distribuida.
+Recibe resultados a través de RabbitMQ y muestra en tiempo real la media acumulada
+de los escenarios simulados usando una interfaz web interactiva basada en Dash y Plotly.
 ____________________________________________________________________________
 '''
 from typing import Any, Dict, List, Tuple, Union
@@ -17,7 +18,6 @@ import json
 
 # Hoja de estilo externa para fuentes
 hojas_de_estilo_externas: List[str] = ['https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap']
-host = 'localhost'
 
 class Visualizador:
     """
@@ -25,10 +25,13 @@ class Visualizador:
     Se encarga de crear la interfaz web, conectarse a RabbitMQ para recibir resultados,
     y actualizar en tiempo real la gráfica de la media acumulada.
     """
-    def __init__(self) -> None:
+    def __init__(self, host: str = "localhost", cola: str = "Resultados") -> None:
         """
         Inicializa la aplicación Dash, configura el layout, conecta a RabbitMQ y
         registra los callbacks para la actualización automática del gráfico.
+        Parámetros:
+            host (str): Dirección del servidor RabbitMQ.
+            cola (str): Nombre de la cola de mensajes.
         """
         # Lista para almacenar los resultados recibidos
         self.resultados: List[float] = []
@@ -158,10 +161,13 @@ class Visualizador:
             pika.ConnectionParameters(host=host, credentials=pika.PlainCredentials('guest', 'guest'))
         )
         self.rabbit_channel = self.rabbit_connection.channel()
-        self.rabbit_channel.queue_declare(queue='Resultados')
+        self.rabbit_channel.queue_declare(queue=cola)
 
         # Limpia la cola de resultados al iniciar la aplicación
-        self.rabbit_channel.queue_purge(queue="Resultados")
+        self.rabbit_channel.queue_purge(queue=cola)
+
+        # Almacena el nombre de la cola para su uso en el callback
+        self.cola: str = cola
 
         # Registra los callbacks de la aplicación Dash
         self.registrar_callbacks()
@@ -272,7 +278,7 @@ class Visualizador:
     </body>
 </html>
 '''
-
+ 
     def registrar_callbacks(self) -> None:
         """
         Registra los callbacks que actualizan los gráficos y estadísticos en tiempo real
@@ -297,7 +303,7 @@ class Visualizador:
             calcula la media acumulada, estadísticos y actualiza el histograma.
             """
             method, header, body = self.rabbit_channel.basic_get(
-                queue='Resultados', auto_ack=True
+                queue=self.cola, auto_ack=True
             )
             if not method:
                 return no_update, no_update, no_update, no_update, no_update, no_update
@@ -355,9 +361,12 @@ class Visualizador:
             # Devuelve los datos para actualizar la gráfica de la media acumulada
             return (
                 {"x": [[id_escenario]], "y": [[media_acumulada]]},
-                [0],
-                1000000
-            ), histograma_figura, media_str, varianza_str, desviacion_str, simulaciones_str
+                histograma_figura,
+                media_str,
+                varianza_str,
+                desviacion_str,
+                simulaciones_str
+            )
 
     def iniciar(self, debug: bool = False) -> None:
         """
