@@ -10,7 +10,10 @@ def main():
                             nom_exchange=EXCHANGE, 
                             nom_queue_escenarios=QUEUE_ESCENARIOS, 
                             nom_queue_resultados=QUEUE_RESULTADOS)
-    consumidor.iniciar_consumidor()
+    try:
+        consumidor.iniciar_consumidor()
+    except KeyboardInterrupt:
+        print("El usuario ha detenido al consumidor.")
 
 if __name__ == "__main__":
     main()

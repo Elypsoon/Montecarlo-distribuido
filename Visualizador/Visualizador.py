@@ -77,6 +77,8 @@ class Visualizador:
         self.rabbit_channel = self.rabbit_connection.channel()
         self.rabbit_channel.queue_declare(queue='Resultados')
 
+        self.rabbit_channel.queue_purge(queue="Resultados")
+
         # Registra los callbacks de la aplicación
         self.registrar_callbacks()
 

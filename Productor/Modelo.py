@@ -23,8 +23,6 @@ class Modelo:
         self.constantes = self.configuracion_modelo["constantes"]
         self.variables = self.configuracion_modelo["variables"]
 
-        print("[MODELO] Modelo cargado correctamente")
-
     def obtener_configuracion(self) -> dict:
         configuracion = {
             "formula": self.formula,

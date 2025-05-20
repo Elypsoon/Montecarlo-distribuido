@@ -18,7 +18,7 @@ class Consumidor:
             nombre: valor for nombre, valor in configuracion.items()
             if nombre != "formula"
         }
-        print(f"[CONSUMIDOR] Configuración recibida: formula = {self.formula}, constantes = {self.constantes}")
+        print(f"[CONSUMIDOR] Configuración recibida.")
 
         ch.stop_consuming()
 
