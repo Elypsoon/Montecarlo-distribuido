@@ -1,3 +1,5 @@
+
+
 {
     "formula": "((pv - c1 - c2) * x) - (ca + cb)",
     "iteraciones": 10,
