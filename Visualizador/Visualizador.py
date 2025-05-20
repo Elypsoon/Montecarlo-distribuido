@@ -1,6 +1,12 @@
 '''
-Parte del proyecto encargado de la visualización de los datos.
+___________________________________________________________________________
+Módulo: Visualizador.py
+Descripción: Parte del proyecto encargado de la visualización de los datos.
 Temporalmente con datos de prueba que simulan el comportamiento de los datos.
+En este módulo se visualiza la simulación Monte Carlo, se crea una interfaz
+web interactuva utilizando Dash y Plotly para visualizar la evolución de la 
+media acomulada de los escenarios generados. 
+____________________________________________________________________________
 '''
 
 import dash
@@ -14,15 +20,22 @@ import numpy as np
 hojas_de_estilo_externas = ['https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap']
 
 class Visualizador:
+    """
+    Esta clase se encarga de crear y ejecutar la interfaz gráfica para visualizar la media acumulada
+    de escenarios de una simulación Monte Carlo.
+        resultados (list): Lista de valores generados (simulados).
+        aplicacion (dash.Dash): Instancia de la aplicación Dash.
+    """
     def __init__(self):
-        # Lista para almacenar los resultados
-        self.resultados = []
+        """Inicializa la interfaz, define su estructura visual y configura 
+        el estilo y los callbacks."""
 
-        # Inicializa la aplicación Dash con una hoja de estilo externa
-        self.aplicacion = dash.Dash(__name__, external_stylesheets=hojas_de_estilo_externas)
+        self.resultados = [] # Lista para almacenar los resultados
+
+        self.aplicacion = dash.Dash(__name__, external_stylesheets=hojas_de_estilo_externas)  # Inicializa la aplicación Dash con una hoja de estilo externa
         
-        # Configura el layout de la aplicación Dash
-        self.aplicacion.layout = html.Div([
+        
+        self.aplicacion.layout = html.Div([  # Configura el layout de la aplicación Dash
             html.Div([
                 html.H1("Simulación Monte Carlo", className="titulo-cabecera"),
                 html.H3("Visualización de Media Acumulada", className="subtitulo-cabecera"),
@@ -133,12 +146,19 @@ class Visualizador:
 '''
 
     def registrar_callbacks(self):
+        """Registra los callbacks necesarios para la actualización automática del gráfico."""
         # Callback para actualizar el gráfico en vivo cada vez que el intervalo se dispara
         @self.aplicacion.callback(
             Output("grafico-en-vivo", "extendData"),
             Input("componente-intervalo", "n_intervals")
         )
         def actualizar_grafico_en_vivo(n):
+
+            """
+            Callback que se ejecuta cada vez que el componente de intervalo se actualiza.
+                n (int): Número de veces que se ha ejecutado el intervalo.
+                tuple: Datos extendidos para el gráfico.
+            """
             # Genera un nuevo valor aleatorio (simulación)
             nuevo_valor = random.gauss(0, 1)
             self.resultados.append(nuevo_valor)
@@ -153,6 +173,10 @@ class Visualizador:
             )
 
     def iniciar(self, debug=False):
+        """
+        Inicia el servidor de la aplicación Dash.
+            debug (bool): Activa el modo debug de Dash. Útil para desarrollo.
+        """
         self.aplicacion.run(debug=debug)
 
 if __name__ == "__main__":
