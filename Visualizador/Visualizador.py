@@ -6,7 +6,7 @@ Recibe resultados a través de RabbitMQ y muestra en tiempo real la media acumul
 usando una interfaz web interactiva basada en Dash y Plotly.
 ____________________________________________________________________________
 '''
-
+from typing import Any, Dict, List, Tuple, Union
 import dash
 from dash import dcc, html, no_update
 from dash.dependencies import Output, Input
@@ -16,7 +16,7 @@ import pika
 import json
 
 # Hoja de estilo externa para fuentes
-hojas_de_estilo_externas = ['https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap']
+hojas_de_estilo_externas: List[str] = ['https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap']
 
 class Visualizador:
     """
@@ -24,16 +24,16 @@ class Visualizador:
     Se encarga de crear la interfaz web, conectarse a RabbitMQ para recibir resultados,
     y actualizar en tiempo real la gráfica de la media acumulada.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Inicializa la aplicación Dash, configura el layout, conecta a RabbitMQ y
         registra los callbacks para la actualización automática del gráfico.
         """
         # Lista para almacenar los resultados recibidos
-        self.resultados = []
+        self.resultados: List[float] = []
 
         # Inicializa la aplicación Dash con la hoja de estilo externa
-        self.aplicacion = dash.Dash(__name__, external_stylesheets=hojas_de_estilo_externas)
+        self.aplicacion: dash.Dash = dash.Dash(__name__, external_stylesheets=hojas_de_estilo_externas)
         
         # Define la estructura visual de la aplicación
         self.aplicacion.layout = html.Div([
@@ -84,7 +84,7 @@ class Visualizador:
         ], className="contenedor-principal")
         
         # Conexión a RabbitMQ para recibir los resultados de la simulación
-        self.rabbit_connection = pika.BlockingConnection(
+        self.rabbit_connection: pika.BlockingConnection = pika.BlockingConnection(
             pika.ConnectionParameters(host='172.26.161.229', credentials=pika.PlainCredentials('guest', 'guest'))
         )
         self.rabbit_channel = self.rabbit_connection.channel()
@@ -156,7 +156,7 @@ class Visualizador:
 </html>
 '''
 
-    def registrar_callbacks(self):
+    def registrar_callbacks(self) -> None:
         """
         Registra el callback que actualiza el gráfico en tiempo real cada vez que
         se recibe un nuevo resultado desde RabbitMQ.
@@ -165,7 +165,10 @@ class Visualizador:
             Output("grafico-en-vivo", "extendData"),
             Input("componente-intervalo", "n_intervals")
         )
-        def actualizar_grafico_en_vivo(n):
+        def actualizar_grafico_en_vivo(n: int) -> Union[
+            Any,
+            Tuple[Dict[str, List[List[Union[int, float]]]], List[int], int]
+        ]:
             """
             Callback ejecutado periódicamente por el componente Interval.
             Obtiene un nuevo resultado de la cola RabbitMQ, actualiza la lista de resultados,
@@ -177,12 +180,12 @@ class Visualizador:
             if not method:
                 return no_update
 
-            mensaje = json.loads(body.decode("utf-8"))
-            resultado = mensaje.get("resultado")
+            mensaje: Dict[str, Any] = json.loads(body.decode("utf-8"))
+            resultado: float = mensaje.get("resultado")
             self.resultados.append(resultado)
 
-            id_escenario = len(self.resultados)
-            media_acumulada = np.mean(self.resultados)
+            id_escenario: int = len(self.resultados)
+            media_acumulada: float = np.mean(self.resultados)
 
             return (
                 {"x": [[id_escenario]], "y": [[media_acumulada]]},
@@ -190,15 +193,10 @@ class Visualizador:
                 200
             )
 
-    def iniciar(self, debug=False):
+    def iniciar(self, debug: bool = False) -> None:
         """
         Inicia el servidor web de la aplicación Dash.
         Parámetros:
             debug (bool): Si es True, activa el modo debug de Dash.
         """
         self.aplicacion.run(debug=debug)
-
-if __name__ == "__main__":
-    # Crea una instancia del visualizador y lo inicia
-    visualizador = Visualizador()
-    visualizador.iniciar(debug=False)
