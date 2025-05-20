@@ -11,13 +11,13 @@ import dash
 from dash import dcc, html, no_update
 from dash.dependencies import Output, Input
 import plotly.graph_objs as go
-import plotly.express as px
 import numpy as np
 import pika
 import json
 
 # Hoja de estilo externa para fuentes
 hojas_de_estilo_externas: List[str] = ['https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap']
+host = 'localhost'
 
 class Visualizador:
     """
@@ -155,7 +155,7 @@ class Visualizador:
         
         # Conexión a RabbitMQ para recibir los resultados de la simulación
         self.rabbit_connection: pika.BlockingConnection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='172.26.161.229', credentials=pika.PlainCredentials('guest', 'guest'))
+            pika.ConnectionParameters(host=host, credentials=pika.PlainCredentials('guest', 'guest'))
         )
         self.rabbit_channel = self.rabbit_connection.channel()
         self.rabbit_channel.queue_declare(queue='Resultados')
@@ -314,10 +314,10 @@ class Visualizador:
             varianza: float = np.var(self.resultados) if len(self.resultados) > 1 else 0
             desviacion: float = np.std(self.resultados) if len(self.resultados) > 1 else 0
             
-            # Formatear estadísticos como cadenas con formato
-            media_str: str = f"{media:.6f}"
-            varianza_str: str = f"{varianza:.6f}"
-            desviacion_str: str = f"{desviacion:.6f}"
+            # Formatear estadísticos como cadenas con formato a 3 decimales
+            media_str: str = f"{media:.3f}"
+            varianza_str: str = f"{varianza:.3f}"
+            desviacion_str: str = f"{desviacion:.3f}"
             simulaciones_str: str = str(id_escenario)
             
             # Crear histograma actualizado
