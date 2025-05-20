@@ -11,12 +11,12 @@ ________________________________________________________________________________
 
 from Consumidor import Consumidor
 
-IP = 'localhost'
-EXCHANGE = 'Cofiguracion'
-QUEUE_ESCENARIOS = 'Escenarios'
-QUEUE_RESULTADOS = 'Resultados'
+IP: str = 'localhost'
+EXCHANGE: str = 'Cofiguracion'
+QUEUE_ESCENARIOS: str = 'Escenarios'
+QUEUE_RESULTADOS: str = 'Resultados'
 
-def main():
+def main() -> None:
     """
     Función principal del consumidor.
     Este script representa la parte del sistema se encarga de las siguientes funciones:
@@ -26,10 +26,12 @@ def main():
         4. Publica los resultados en la cola de resultados.
     Utiliza una instancia de la clase `Consumidor` para realizar todo el flujo de trabajo.
     """
-    consumidor = Consumidor(ip=IP, 
-                            nom_exchange=EXCHANGE, 
-                            nom_queue_escenarios=QUEUE_ESCENARIOS, 
-                            nom_queue_resultados=QUEUE_RESULTADOS)
+    consumidor: Consumidor = Consumidor(
+        ip=IP, 
+        nom_exchange=EXCHANGE, 
+        nom_queue_escenarios=QUEUE_ESCENARIOS, 
+        nom_queue_resultados=QUEUE_RESULTADOS
+    )
     try:
         consumidor.iniciar_consumidor()
     except KeyboardInterrupt:

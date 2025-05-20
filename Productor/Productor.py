@@ -14,11 +14,12 @@ import pika
 import json
 import numpy as np
 import multiprocessing as mp
+from typing import Any, Dict
 from Modelo import Modelo
 
-modelo_global = None
+modelo_global: Modelo = None
 
-def iniciar_pool(ruta_modelo: str, variables: dict):
+def iniciar_pool(ruta_modelo: str, variables: Dict[str, Any]) -> None:
     """
     Función de inicialización de procesos, se encarga de cargar cada proceso hijo.
         ruta_modelo (str): Ruta al archivo del modelo JSON.
@@ -29,10 +30,11 @@ def iniciar_pool(ruta_modelo: str, variables: dict):
     modelo_global.configurar_modelo()
     modelo_global.variables = variables
 
-def generar_escenario(_):
+def generar_escenario(_: int) -> str:
     """
     Genera un escenario simulado usando el modelo global y lo serializa en JSON.
-        str: Escenario generado en formato JSON.
+        _: Valor ignorado que permite la iteración.
+        Returns: Escenario generado en formato JSON.
     """
     rng = np.random.default_rng()
     escenario = modelo_global.generar_escenario(rng=rng)
@@ -41,10 +43,10 @@ def generar_escenario(_):
 class Productor:
     """
     Clase que representa el productor del sistema Montecarlo distribuido.
-    Esta clase sirve para gestiona la conexión con RabbitMQ, la carga del modelo, 
+    Esta clase sirve para gestionar la conexión con RabbitMQ, la carga del modelo, 
     la generación paralela de escenarios y el envío de resultados a una cola.
     """
-    def __init__(self, ip: str, nom_exchange: str, nom_queue: str, ruta_modelo: str):
+    def __init__(self, ip: str, nom_exchange: str, nom_queue: str, ruta_modelo: str) -> None:
         """
         Inicializa el productor con la conexión y configuración del modelo.
             ip (str): Dirección IP del servidor de RabbitMQ.
@@ -52,52 +54,52 @@ class Productor:
             nom_queue (str): Nombre de la cola para publicar los escenarios.
             ruta_modelo (str): Ruta al archivo JSON con el modelo.
         """
-        self.conexion = pika.BlockingConnection(
+        self.conexion: pika.BlockingConnection = pika.BlockingConnection(
             pika.ConnectionParameters(host=ip, credentials=pika.PlainCredentials("guest", "guest"))
         )
         self.canal = self.conexion.channel()
-        self.ruta_modelo = ruta_modelo
-        self.nom_exchange = nom_exchange
-        self.nom_queue = nom_queue
-        self.escenarios = set()
-        self.modelo = Modelo(ruta_modelo=ruta_modelo)
+        self.ruta_modelo: str = ruta_modelo
+        self.nom_exchange: str = nom_exchange
+        self.nom_queue: str = nom_queue
+        self.escenarios: set = set()
+        self.modelo: Modelo = Modelo(ruta_modelo=ruta_modelo)
 
-    def configurar_conexion(self):
+    def configurar_conexion(self) -> None:
         """
         Declara el exchange y la cola en RabbitMQ para asegurar que existan.
         """
         self.canal.exchange_declare(exchange=self.nom_exchange, exchange_type='fanout')
         self.canal.queue_declare(queue=self.nom_queue, durable=True)
 
-    def configurar_modelo(self):
+    def configurar_modelo(self) -> None:
         """
         Carga la configuración del modelo desde el archivo JSON.
         """
         self.modelo.configurar_modelo()
         print("[MODELO] Modelo cargado correctamente")
 
-    def publicar_configuracion(self):
+    def publicar_configuracion(self) -> None:
         """
         Publica la configuración del modelo (fórmula y constantes) al exchange.
         """
         print("[PRODUCTOR] Enviando configuración.")
-        mensaje = json.dumps(self.modelo.obtener_configuracion())
+        mensaje: str = json.dumps(self.modelo.obtener_configuracion())
         
         self.canal.basic_publish(
             exchange=self.nom_exchange, 
             routing_key='', 
             body=mensaje,
             properties=pika.BasicProperties(delivery_mode=2)
-            )
+        )
 
-    def generar_escenarios(self):
+    def generar_escenarios(self) -> None:
         """
         Genera escenarios aleatorios en paralelo utilizando un pool de procesos.
         Cada escenario es generado por un proceso hijo, serializado a JSON y enviado a la cola de RabbitMQ.
         Además, almacena los escenarios generados en el atributo `self.escenarios` para evitar duplicados.
         """
-        iteraciones = self.modelo.iteraciones
-        variables = self.modelo.variables
+        iteraciones: int = self.modelo.iteraciones
+        variables: Dict[str, Any] = self.modelo.variables
 
         print(f"[PRODUCTOR] Generando {iteraciones} escenarios en paralelo.")
 
@@ -117,7 +119,7 @@ class Productor:
         
         print(f"[PRODUCTOR] Se han enviado {len(self.escenarios)} escenarios únicos.")
 
-    def iniciar_productor(self):
+    def iniciar_productor(self) -> None:
         """
         Ejecuta el flujo principal del productor:
         1. Carga la configuración del modelo desde el archivo JSON.
